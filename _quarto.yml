@@ -1,5 +1,25 @@
 project:
   title: "tunaki"
+  type: default
+  output-dir: _output
 
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    embed-resources: true
+    fig-dpi: 150
+  docx:
+    toc: true
+    number-sections: true
+
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: true
 
 

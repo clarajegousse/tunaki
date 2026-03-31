@@ -1,0 +1,100 @@
+---
+title: "README"
+author: "Clara Jégousse"
+date: "2026-03-31"
+output: html_document
+---
+
+# tunaki
+
+A Quarto report on tuna fisheries in Kiribati, built on FAO Global Capture
+Production data retrieved via the [fishR](https://github.com/clarajegousse/fishR)
+package.
+
+## About
+
+Kiribati sits at the heart of the world's most productive tuna grounds. Its
+Exclusive Economic Zone spans 3.5 million km2 of the central Pacific and is
+home to major stocks of skipjack, yellowfin, bigeye, and albacore tuna.
+This report tracks historical and recent catch trends using FAO-reported
+national statistics.
+
+## Structure
+
+| File | Purpose |
+|---|---|
+| `tunaki.qmd` | Main Quarto report |
+| `R/colours.R` | IOC colour palette and species colour mapping |
+| `R/theme.R` | Shared ggplot2 theme (theme_tunaki) |
+| `R/data.R` | Data loading and filtering via fishR |
+
+## Usage
+
+### Requirements
+```r
+install.packages(c(
+  "ggplot2", "dplyr", "scales",
+  "sysfonts", "showtext",
+  "sf", "mregions2",
+  "rnaturalearth", "rnaturalearthdata",
+  "knitr"
+))
+
+remotes::install_github("clarajegousse/fishR")
+```
+
+### Render
+```bash
+quarto render tunaki.qmd
+```
+
+This produces both HTML and Word outputs in `_output/`.
+
+### Publish
+```bash
+quarto publish gh-pages
+```
+
+## Data sources
+
+- FAO Global Capture Production:
+  https://www.fao.org/fishery/en/collection/capture
+- Maritime Boundaries Geodatabase (VLIZ):
+  https://www.marineregions.org
+- Natural Earth: https://www.naturalearthdata.com
+
+## Related
+
+- [fishR](https://github.com/clarajegousse/fishR) - R package for FAO
+  fisheries data
+
+## License
+
+MIT
+
+---
+
+## TODO
+
+### Map
+- [ ] Add Pacific EEZ map highlighting Kiribati (lobster orange)
+- [ ] Colour EEZ zones by yellowfin tuna catch intensity (gradient)
+- [ ] Add PNA member states layer for context?
+
+### Figures
+- [ ] Scientific illustrations of tuna species (skipjack, yellowfin, bigeye, albacore) 
+- [ ] Consider silhouettes via rphylopic as axis decorations or watermarks?
+- [ ] Add a proportional area chart showing species share over time
+
+### Data
+- [ ] Cross-reference FAO data with WCPFC stock assessment reports??
+- [ ] Add WCPFC catch estimates as a comparison layer (licensed foreign vessels)
+- [ ] Check if Kiribati EEZ catch vs flag-reported catch differs significantly
+
+### Report
+- [ ] Add executive summary section
+- [ ] Add methods section describing FAO data limitations
+
+### fishR
+- [ ] Add plot function for decadal averages to fishR
+- [ ] Consider adding EEZ map helper to fishR or a separate spatial package

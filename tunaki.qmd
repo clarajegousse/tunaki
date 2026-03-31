@@ -1,11 +1,267 @@
 ---
-title: "tunaki"
+title: "Tuna Fisheries in Kiribati"
+subtitle: "A data-driven overview based on FAO Global Capture Production"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    embed-resources: true
+    fig-dpi: 150
+  docx:
+    toc: true
+    number-sections: true
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: true
 ---
+```{r setup}
+#| include: false
+library(ggplot2)
+library(scales)
+library(dplyr)
+library(sf)
+library(mregions2)
+library(rnaturalearth)
+library(rnaturalearthdata)
 
-## Quarto
+source("R/colours.R")
+source("R/theme.R")
+source("R/data.R")
+```
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+## Introduction
 
-```{r}
-1 + 1
+Kiribati is one of the most tuna-dependent nations in the world. Spanning
+3.5 million km2 of Pacific Ocean across three island groups (the Gilbert,
+Phoenix, and Line Islands), its Exclusive Economic Zone (EEZ) is among the largest
+on Earth and sits at the heart of the world's most productive skipjack tuna
+grounds. This report examines historical and recent trends in tuna catches
+reported to the FAO, broken down by species.
+
+> Data covers FAO-reported national catch statistics and may not reflect the
+> full extent of fishing activity within Kiribati's EEZ, including licensed
+> foreign vessel catches attributed to other flags.
+
+## Historical catch trends
+
+### Total tuna catch over time
+
+```{r fig-total-trend}
+#| fig-cap: "Total tuna catch reported by Kiribati, all species combined"
+#| fig-height: 4
+
+kir |>
+  group_by(PERIOD) |>
+  summarise(total = sum(VALUE, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(x = PERIOD, y = total)) +
+  geom_area(fill = clr$ocean_navy, alpha = 0.15) +
+  geom_line(colour = clr$ocean_navy, linewidth = 0.9) +
+  scale_y_continuous(labels = label_comma(scale = 1e-3, suffix = "k t")) +
+  scale_x_continuous(breaks = seq(1950, 2025, 10)) +
+  labs(
+    title    = "Total tuna catch in Kiribati",
+    subtitle = "All species, FAO-reported landings",
+    x = NULL, y = "Catch (thousand tonnes)",
+    caption  = caption_fao
+  ) +
+  theme_tunaki()
+```
+
+### Catch by species over time
+
+```{r fig-species-trend}
+#| fig-cap: "Catch by tuna species in Kiribati"
+#| fig-height: 5
+
+kir |>
+  group_by(PERIOD, Sp_Name_En) |>
+  summarise(catch = sum(VALUE, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(x = PERIOD, y = catch,
+             colour = Sp_Name_En, fill = Sp_Name_En)) +
+  geom_area(alpha = 0.12, position = "identity") +
+  geom_line(linewidth = 0.8) +
+  scale_colour_manual(values = species_colours) +
+  scale_fill_manual(values = species_colours) +
+  scale_y_continuous(labels = label_comma(scale = 1e-3, suffix = "k t")) +
+  scale_x_continuous(breaks = seq(1950, 2025, 10)) +
+  labs(
+    title    = "Tuna catch by species in Kiribati",
+    subtitle = "FAO-reported landings",
+    x = NULL, y = "Catch (thousand tonnes)",
+    caption  = caption_fao
+  ) +
+  theme_tunaki()
+```
+
+### Stacked species composition
+
+```{r fig-stacked}
+#| fig-cap: "Stacked species composition of tuna catch in Kiribati"
+#| fig-height: 4
+
+kir |>
+  group_by(PERIOD, Sp_Name_En) |>
+  summarise(catch = sum(VALUE, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(x = PERIOD, y = catch, fill = Sp_Name_En)) +
+  geom_area(position = "stack", alpha = 0.85) +
+  scale_fill_manual(values = species_colours) +
+  scale_y_continuous(labels = label_comma(scale = 1e-3, suffix = "k t")) +
+  scale_x_continuous(breaks = seq(1950, 2025, 10)) +
+  labs(
+    title    = "Species composition of tuna catch in Kiribati",
+    subtitle = "Stacked total, FAO-reported landings",
+    x = NULL, y = "Catch (thousand tonnes)",
+    caption  = caption_fao
+  ) +
+  theme_tunaki()
+```
+
+### Decadal averages
+
+```{r fig-decadal}
+#| fig-cap: "Mean annual catch per decade by species, Kiribati"
+#| fig-height: 4
+
+kir |>
+  mutate(decade = paste0(floor(PERIOD / 10) * 10, "s")) |>
+  group_by(decade, Sp_Name_En) |>
+  summarise(mean_catch = mean(VALUE, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(x = decade, y = mean_catch, fill = Sp_Name_En)) +
+  geom_col(position = "dodge", width = 0.7) +
+  scale_fill_manual(values = species_colours) +
+  scale_y_continuous(labels = label_comma(scale = 1e-3, suffix = "k t")) +
+  labs(
+    title    = "Mean annual tuna catch per decade in Kiribati",
+    subtitle = "By species",
+    x = NULL, y = "Mean catch (thousand tonnes)",
+    caption  = caption_fao
+  ) +
+  theme_tunaki()
+```
+
+## Recent snapshot (`r latest_year`)
+
+### Species breakdown
+
+```{r fig-latest-bar}
+#| fig-cap: !expr paste("Tuna catch by species in Kiribati,", latest_year)
+#| fig-height: 3.5
+
+kir |>
+  filter(PERIOD == latest_year) |>
+  group_by(Sp_Name_En) |>
+  summarise(catch = sum(VALUE, na.rm = TRUE), .groups = "drop") |>
+  mutate(Sp_Name_En = reorder(Sp_Name_En, catch)) |>
+  ggplot(aes(x = catch, y = Sp_Name_En, fill = Sp_Name_En)) +
+  geom_col(width = 0.6, show.legend = FALSE) +
+  geom_text(
+    aes(label = label_comma(scale = 1e-3, suffix = "k t")(catch)),
+    hjust = -0.15, size = 3, colour = clr$basalt, family = "roboto"
+  ) +
+  scale_fill_manual(values = species_colours) +
+  scale_x_continuous(
+    labels = label_comma(scale = 1e-3, suffix = "k t"),
+    expand = expansion(mult = c(0, 0.2))
+  ) +
+  labs(
+    title    = paste("Tuna catch by species in Kiribati,", latest_year),
+    subtitle = "FAO-reported landings",
+    x = NULL, y = NULL,
+    caption  = caption_fao
+  ) +
+  theme_tunaki() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(colour = clr$arctic_white)
+  )
+```
+
+### 10-year trend
+
+```{r fig-recent-trend}
+#| fig-cap: !expr paste("Tuna catch by species, Kiribati,", latest_year - 9, "to", latest_year)
+#| fig-height: 4
+
+kir |>
+  filter(PERIOD >= latest_year - 9) |>
+  group_by(PERIOD, Sp_Name_En) |>
+  summarise(catch = sum(VALUE, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(x = PERIOD, y = catch, colour = Sp_Name_En)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_colour_manual(values = species_colours) +
+  scale_y_continuous(labels = label_comma(scale = 1e-3, suffix = "k t")) +
+  scale_x_continuous(breaks = seq(latest_year - 9, latest_year, 2)) +
+  labs(
+    title    = "Recent tuna catch trends in Kiribati",
+    subtitle = paste(latest_year - 9, "to", latest_year),
+    x = NULL, y = "Catch (thousand tonnes)",
+    caption  = caption_fao
+  ) +
+  theme_tunaki()
+```
+
+### Kiribati in Pacific context
+
+```{r fig-pacific-context}
+#| fig-cap: !expr paste("Top 15 Pacific tuna fishing nations,", latest_year)
+#| fig-height: 4.5
+
+data |>
+  filter(
+    Sp_Name_En %in% tuna_species,
+    Ocean_Group_En == "Pacific Ocean",
+    PERIOD == latest_year
+  ) |>
+  group_by(Country_Name_En) |>
+  summarise(catch = sum(VALUE, na.rm = TRUE), .groups = "drop") |>
+  slice_max(catch, n = 15) |>
+  mutate(
+    Country_Name_En = reorder(Country_Name_En, catch),
+    highlight = Country_Name_En == "Kiribati"
+  ) |>
+  ggplot(aes(x = catch, y = Country_Name_En, fill = highlight)) +
+  geom_col(width = 0.7) +
+  scale_fill_manual(
+    values = c("FALSE" = clr$glacial_blue, "TRUE" = clr$lobster_orange),
+    guide  = "none"
+  ) +
+  scale_x_continuous(
+    labels = label_comma(scale = 1e-3, suffix = "k t"),
+    expand = expansion(mult = c(0, 0.05))
+  ) +
+  labs(
+    title    = paste("Top 15 Pacific tuna fishing nations,", latest_year),
+    subtitle = "Kiribati highlighted in orange",
+    x = NULL, y = NULL,
+    caption  = caption_fao
+  ) +
+  theme_tunaki() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(colour = clr$arctic_white)
+  )
+```
+
+## Summary
+
+```{r summary-table}
+#| tbl-cap: "Summary statistics for Kiribati tuna catch by species"
+
+kir |>
+  group_by(Species = Sp_Name_En) |>
+  summarise(
+    `First year`     = min(PERIOD[VALUE > 0], na.rm = TRUE),
+    `Peak year`      = PERIOD[which.max(VALUE)],
+    `Peak catch (t)` = label_comma()(max(VALUE, na.rm = TRUE)),
+    `Latest (t)`     = label_comma()(sum(VALUE[PERIOD == latest_year],
+                                         na.rm = TRUE)),
+    .groups = "drop"
+  ) |>
+  knitr::kable()
 ```
