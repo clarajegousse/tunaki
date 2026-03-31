@@ -12,6 +12,9 @@ home to major stocks of skipjack, yellowfin, bigeye, and albacore tuna.
 This report tracks historical and recent catch trends using FAO-reported
 national statistics.
 
+Full report available: 
+https://clarajegousse.github.io/tunaki/
+
 ## Structure
 
 | File | Purpose |
@@ -36,17 +39,6 @@ install.packages(c(
 remotes::install_github("clarajegousse/fishR")
 ```
 
-### Render
-```bash
-quarto render tunaki.qmd
-```
-
-This produces both HTML and Word outputs in `_output/`.
-
-### Publish
-```bash
-quarto publish gh-pages
-```
 
 ## Data sources
 
