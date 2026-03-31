@@ -1,7 +1,6 @@
 project:
   title: "tunaki"
   type: default
-  output-dir: _output
 
 format:
   html:
