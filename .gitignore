@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+_output/
+*_cache/
+*.cache/
+eez_pacific_simple.rds
+world_pacific_simple.rds
+data/
+.DS_Store
